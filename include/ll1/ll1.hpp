@@ -30,21 +30,13 @@ template <typename A> struct action {
 //  accept => parser is accepting input
 //  reject => parser is rejecting input (also when there is no available path for parsing)
 //  pop => pop symbol from top of the stack
-//  push<A,B,C> => push symbols to the stack
+//  push<A,B,C> => push symbols or actions to the stack
 //  epsilon => push empty string
 
-struct accept: std::true_type {
-	//template <template <size_t, typename> typename, size_t, typename> using apply = accept;
-};
-struct reject: std::false_type { 
-	//template <template <size_t, typename> typename, size_t, typename> using apply = reject;
-};
+struct accept { };
+struct reject { };
 struct pop { };
-
-template <typename... Subject> struct push;
-// {
-//	template <typename Stack> using insert_into = typename Stack::template push_multi<Subject...>;
-//};
+template <typename... Subject> struct push { };
 
 // is push
 
@@ -59,17 +51,6 @@ template <typename> struct is_action_t: std::false_type { };
 template <typename A> struct is_action_t<action<A>>: std::true_type { };
 
 template <typename T> static constexpr bool is_action_v = is_action_t<T>();
-
-// is action callable
-
-template <typename A> struct is_action_callable_t {
-	template <typename I, typename S> static constexpr auto test(I *, S *) -> decltype(A::apply(I::value, std::declval<const S &>()), std::true_type());
-	template <typename, typename> static constexpr std::false_type test(...);
-	template <typename I, typename S> static constexpr bool value = decltype(test((I*)nullptr, (S*)nullptr))();
-};
-
-template <typename A, typename I, typename S> static constexpr bool is_action_callable_v = is_action_callable_t<A>::template value<I,S>;
-
 
 // printer helpers
 
@@ -261,12 +242,17 @@ static_assert(std::is_same_v<hello_tape::at<1024>,epsilon>);
 
 }
 
+// modify subject
+// output type = new subject
 
+template <typename Action, typename Input, typename Subject> static constexpr auto apply_action() {
+	return;
+}
 
 // PARSER
 
-// stable = tape + grammar
-// state = position + stack
+// grammar = table + start symbol
+// parse output = grammar + input (+ subject)
 
 template <bool Value, typename Subject = void> struct final_state {
 	static constexpr bool value = Value;
@@ -281,12 +267,12 @@ template <template <typename, typename> typename Table, typename StartSymbol> st
 
 template <typename Symbol, typename Input> using full_table = overlay_table<Table, Symbol, Input>;
 
+// parse function which takes tape and provides
+// last<Subject> = last state of parsing (accept/reject) + output subject
+// value<Subject> = boolean value, true for accept
+// output_subject<Subject> = output subject
 
 template <typename Tape> struct parse {
-
-template <typename Action, typename Input, typename Subject> static constexpr auto apply_action() {
-	return;
-} 
 
 template <size_t Position, typename Stack, typename Subject = void> struct state {
 	using previous_symbol = typename Tape::template previous_for<Position>;
@@ -370,7 +356,7 @@ template <typename Subject = void> static auto debug() {
 template <typename Subject = void> using last = decltype(evaluate<first<Subject>>());
 
 template <typename Subject = void> static constexpr bool value = last<Subject>();
-template <typename Subject = void> using output_type = typename last<Subject>::subject;
+template <typename Subject = void> using output_subject = typename last<Subject>::subject;
 
 };
 
