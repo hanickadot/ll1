@@ -7,11 +7,11 @@ namespace qmath {
 	
 using namespace LL1;
 
-struct E {void print() { printf("E "); }};
-struct E2 {void print() { printf("E' "); }};
-struct T {void print() { printf("T "); }};
-struct T2 {void print() { printf("T' "); }};
-struct F {void print() { printf("F "); }};
+struct E { static void print() noexcept { printf("E "); }};
+struct E2 { static void print() noexcept { printf("E' "); }};
+struct T { static void print() noexcept { printf("T "); }};
+struct T2 { static void print() noexcept { printf("T' "); }};
+struct F { static void print() noexcept { printf("F "); }};
 
 struct value { 
 	static void print() { printf("value"); }

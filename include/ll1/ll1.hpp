@@ -10,19 +10,26 @@ namespace LL1 {
 //  term<S> ... stack representation of symbols from input tape
 //  action<A> ... semantic action
 
-struct epsilon { };
+struct epsilon {
+	static void print() noexcept {
+		printf("\033[94m" "ε" "\033[39m");
+	}
+};
 
 template <auto v> struct term { 
 	static constexpr auto value = v;
+	static void print() noexcept { 
+		printf("\033[91m" "%c" "\033[39m", value);
+	}
 };
 
 template <typename A> struct action {
 	using type = A;
 	using function = A;
-	static void print() {
-		printf("\033[94m<");
+	static void print() noexcept {
+		printf("\033[94m" "<");
 		type::print();
-		printf(">\033[39m  ");
+		printf(">" "\033[39m");
 	}
 };
 
@@ -40,31 +47,17 @@ template <typename... Subject> struct push { };
 
 // is push
 
-template <typename> struct is_push_t: std::false_type { };
-template <typename... Subject> struct is_push_t<push<Subject...>>: std::true_type { };
+template <typename> struct is_push: std::false_type { };
+template <typename... Subject> struct is_push<push<Subject...>>: std::true_type { };
 
-template <typename T> static constexpr bool is_push_v = is_push_t<T>();
+template <typename T> static constexpr bool is_push_v = is_push<T>();
 
 // is action
 
-template <typename> struct is_action_t: std::false_type { };
-template <typename A> struct is_action_t<action<A>>: std::true_type { };
+template <typename> struct is_action: std::false_type { };
+template <typename A> struct is_action<action<A>>: std::true_type { };
 
-template <typename T> static constexpr bool is_action_v = is_action_t<T>();
-
-// printer helpers
-
-static auto print(epsilon) {
-	printf("\033[94mε\033[39m ");
-}
-
-template <char c> static auto print(term<c>) {
-	printf("\033[91m%c\033[39m ",c);
-}
-
-template <typename Other> static auto print(Other o) {
-	o.print();
-}
+template <typename T> static constexpr bool is_action_v = is_action<T>();
 
 // TODO move me back
 
@@ -73,18 +66,19 @@ template <typename Head, typename... Tail> struct push<Head, Tail...> {
 	using first = Head;
 	using rest = push<Tail...>;
 	static constexpr bool empty = false;
-	static void print_push() {
-		print(Head());
-		push<Tail...>::print_push();
+	static void print() noexcept {
+		Head::print();
+		if (sizeof...(Tail) > 0) {
+			printf(" ");
+			push<Tail...>::print();
+		}
 	}
 };
 
 template <> struct push<> {
 	template <typename Stack> using insert_into = typename Stack::template push_multi<>;
 	static constexpr bool empty = true;
-	static void print_push() {
-		
-	}
+	static void print() noexcept { }
 };
 
 // default table:
@@ -137,8 +131,8 @@ template <> struct stack<> {
 	template <typename Item> using push_one = stack<Item>;
 	template <typename... Items> using push_multi = typename multi_push<Items...>::template into<stack<>>;
 	using pop = stack<>;
-	static void stack_print() {
-		printf("\033[94mε \033[39m ");
+	static void print() noexcept {
+		printf("\033[94m" "ε" "\033[39m ");
 	}
 };
 
@@ -148,8 +142,9 @@ template <typename Top> struct stack<Top> {
 	template <typename Item> using push_one = stack<Item, stack<Top>>;
 	template <typename... Items> using push_multi = typename multi_push<Items...>::template into<stack<Top>>;
 	using pop = stack<>;
-	static void stack_print() {
-		print(top());
+	
+	static void print() noexcept {
+		Top::print();
 	}
 };
 
@@ -159,9 +154,13 @@ template <typename Top, typename... Rest> struct stack<Top, stack<Rest...>> {
 	template <typename Item> using push_one = stack<Item, stack<Top, stack<Rest...>>>;
 	template <typename... Items> using push_multi = typename multi_push<Items...>::template into<stack<Top,stack<Rest...>>>;
 	using pop = stack<Rest...>;
-	static void stack_print() {
-		print(top());
-		if (sizeof...(Rest) > 0) stack<Rest...>::stack_print();
+	
+	static void print() noexcept {
+		Top::print();
+		if (sizeof...(Rest) > 0) {
+			printf(" ");
+			stack<Rest...>::print();
+		}
 	}
 };
 
@@ -300,10 +299,10 @@ template <typename State, size_t step = 0> static constexpr auto evaluate() {
 		printf("#%02zu: " "\033[39m", State::position);
 	}
 	
-	print(typename State::input_symbol());
+	State::input_symbol::print();
 	
 	printf("\033[90m" " [ " "\033[39m");
-	State::stack::stack_print();
+	State::stack::print();
 	printf("\033[90m" "] -> " "\033[39m");
 	
 	if constexpr (is_action_v<typename State::stack::top>) {
@@ -330,12 +329,12 @@ template <typename State, size_t step = 0> static constexpr auto evaluate() {
 			// Q-grammar optimization:
 			if constexpr (std::is_same_v<typename State::input_symbol, typename next::first>) {
 				printf("\033[96m" "qpush" "\033[39m: ");
-				next::print_push();
+				next::print();
 				printf("\n");
 				return evaluate<typename State::apply::template qpush<typename next::rest>, step+1>();
 			} else {
 				printf("\033[95m" "push" "\033[39m: ");
-				next::print_push();
+				next::print();
 				printf("\n");
 				return evaluate<typename State::apply::template push<next>, step+1>();
 			}
