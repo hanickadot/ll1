@@ -9,10 +9,17 @@
 int main() {
 	using namespace LL1::literals;
 	
-	using grammar = LL1::grammar<math::table, math::E>;
-	using parser = grammar::parse<decltype("(n+n)*n"_tape)>;
+	auto out = LL1::grammar<math::table, math::E>::parse<decltype("(n+n)*n"_tape)>;
 	
-	auto out = parser::value<>;
+	static_assert(sizeof(out) == 1);
 	
-	parser::debug();
+	out.debug();
+	
+	static_assert(out == true);	
+	
+	if (out) {
+		puts("input accepted");
+	} else {
+		puts("input rejected");
+	}
 }

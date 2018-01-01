@@ -271,7 +271,7 @@ template <typename Symbol, typename Input> using full_table = overlay_table<Tabl
 // value<Subject> = boolean value, true for accept
 // output_subject<Subject> = output subject
 
-template <typename Tape> struct parse {
+template <typename Tape> struct parse_t {
 
 template <size_t Position, typename Stack, typename Subject = void> struct state {
 	using previous_symbol = typename Tape::template previous_for<Position>;
@@ -357,7 +357,17 @@ template <typename Subject = void> using last = decltype(evaluate<first<Subject>
 template <typename Subject = void> static constexpr bool value = last<Subject>();
 template <typename Subject = void> using output_subject = typename last<Subject>::subject;
 
+constexpr parse_t() noexcept {
+	
+}
+
+constexpr operator bool() const noexcept {
+	return this->value<void>;
+}
+
 };
+
+template <typename Tape> static constexpr parse_t<Tape> parse;
 
 };
 
